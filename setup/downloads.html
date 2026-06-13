@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Setup and Downloads</title>
+  <style>
+    :root{--bg:#0f172a;--ink:#172033;--muted:#64748b;--line:#dbe4ef;--card:#fff;--soft:#eff6ff;--accent:#2563eb;--green:#047857;--amber:#b45309}*{box-sizing:border-box}body{margin:0;background:#f1f5f9;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.6}.top{background:linear-gradient(135deg,#0f172a,#172554);color:#fff;padding:34px 22px}.wrap{max-width:1040px;margin:0 auto}main{padding:26px 22px 70px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin:16px 0;box-shadow:0 8px 24px rgba(15,23,42,.06)}h1{margin:.2rem 0;font-size:clamp(2rem,4vw,3.2rem)}h2{margin-top:0}.badge{display:inline-block;background:#e0e7ff;color:#3730a3;padding:4px 10px;border-radius:999px;font-weight:700;font-size:.85rem}.required{background:#dcfce7;color:#166534}.optional{background:#fef3c7;color:#92400e}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}pre{background:#0b1220;color:#e5e7eb;padding:16px;border-radius:14px;overflow:auto}code{background:#e2e8f0;padding:.15rem .35rem;border-radius:6px}pre code{background:transparent;padding:0}.note{border-left:5px solid #0891b2;background:#ecfeff;padding:14px;border-radius:12px}.warn{border-left:5px solid var(--amber);background:#fff7ed;padding:14px;border-radius:12px}a{color:var(--accent);font-weight:700}.checklist label{display:block;margin:.45rem 0}.nav{margin-bottom:18px}.nav a{margin-right:12px}</style>
+</head>
+<body>
+<header class="top"><div class="wrap"><div class="nav"><a style="color:#bfdbfe" href="../index.html">← Home</a></div><h1>Setup and Downloads</h1><p>Install the minimum tools for the first lessons. Docker is optional for Lesson 1, but recommended for later Postgres, Redis, and stream labs.</p></div></header>
+<main class="wrap">
+  <section class="card">
+    <h2>Minimum setup for Lesson 1</h2>
+    <div class="grid">
+      <article class="card" style="margin:0"><span class="badge required">required</span><h3>Python 3</h3><p>Use Python 3.10+ for the DuckDB lab. Check your version:</p><pre><code>python --version
+# or
+python3 --version</code></pre><p>Official download: <a href="https://www.python.org/downloads/">python.org/downloads</a></p></article>
+      <article class="card" style="margin:0"><span class="badge required">required</span><h3>DuckDB Python package</h3><p>Install inside a virtual environment:</p><pre><code>python -m venv .venv
+source .venv/bin/activate   # macOS/Linux
+# .venv\Scripts\activate    # Windows PowerShell
+pip install duckdb pandas pyarrow</code></pre><p>Package page: <a href="https://pypi.org/project/duckdb/">PyPI duckdb</a></p></article>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Recommended setup for later lessons</h2>
+    <div class="grid">
+      <article class="card" style="margin:0"><span class="badge optional">recommended</span><h3>Docker Desktop</h3><p>Docker lets us run Postgres, Redis, and Redpanda/Kafka-like services without installing each one directly on your machine.</p><p>Official install guide: <a href="https://docs.docker.com/get-started/get-docker/">Docker Get Docker</a></p><pre><code>docker --version
+docker compose version</code></pre></article>
+      <article class="card" style="margin:0"><span class="badge optional">later labs</span><h3>Postgres client</h3><p>Docker can run the server, but a local SQL client is useful. You can use <code>psql</code>, DBeaver, DataGrip, or VS Code database extensions.</p><pre><code>psql --version</code></pre></article>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Local services with Docker Compose</h2>
+    <p>The repo includes <code>labs/docker-compose.yml</code>. Later lessons will use it to start local systems.</p><pre><code>cd labs
+docker compose up -d postgres redis redpanda
+docker compose ps
+
+docker compose down</code></pre>
+    <p class="warn"><strong>Use Docker carefully:</strong> containers are useful for learning, but they still run code on your machine. Use official images, avoid mounting sensitive folders, and stop containers you are not using.</p>
+  </section>
+
+  <section class="card checklist">
+    <h2>Setup checklist</h2>
+    <label><input type="checkbox"> I can run <code>python --version</code>.</label>
+    <label><input type="checkbox"> I created a virtual environment.</label>
+    <label><input type="checkbox"> I installed <code>duckdb pandas pyarrow</code>.</label>
+    <label><input type="checkbox"> I can run <code>python -c "import duckdb; print(duckdb.sql('select 42').fetchall())"</code>.</label>
+    <label><input type="checkbox"> Optional: I installed Docker Desktop.</label>
+    <label><input type="checkbox"> Optional: I can run <code>docker compose version</code>.</label>
+  </section>
+
+  <section class="card">
+    <h2>How submissions work</h2>
+    <p>Each lesson has answer boxes. Open the lesson locally, type your answers, then use the buttons at the bottom:</p>
+    <ul><li><strong>Save Draft</strong> stores answers in your browser local storage.</li><li><strong>Copy Submission</strong> copies a Markdown version to your clipboard.</li><li><strong>Download Submission</strong> downloads a <code>.md</code> file you can commit or paste into chat.</li></ul>
+    <p class="note">Browser local storage is not Git. Download or copy your answers before switching browsers or clearing site data.</p>
+  </section>
+</main>
+</body>
+</html>
