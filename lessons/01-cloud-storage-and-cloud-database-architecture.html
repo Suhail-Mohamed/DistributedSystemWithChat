@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lesson 1 - Cloud Storage and Cloud Database Architecture</title>
+  <style>
+    :root{--bg:#0f172a;--ink:#172033;--muted:#64748b;--line:#dbe4ef;--card:#fff;--soft:#eff6ff;--accent:#2563eb;--purple:#7c3aed;--green:#047857;--amber:#b45309;--red:#b91c1c}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#f1f5f9;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.6}.top{background:linear-gradient(135deg,#0f172a,#172554 60%,#312e81);color:#fff;padding:34px 22px}.wrap{max-width:1080px;margin:0 auto}main{padding:26px 22px 80px}.card{background:white;border:1px solid var(--line);border-radius:18px;padding:22px;margin:16px 0;box-shadow:0 8px 24px rgba(15,23,42,.06)}.mini{padding:16px;margin:0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}.two{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}@media(max-width:850px){.two{grid-template-columns:1fr}}h1{font-size:clamp(2rem,5vw,3.5rem);line-height:1.05;margin:.2rem 0 12px}h2{margin-top:0}h3{margin-bottom:.4rem}.tag{display:inline-block;background:#dbeafe;color:#1e40af;padding:4px 10px;border-radius:999px;font-weight:700;font-size:.84rem;margin:3px}.tag.purple{background:#ede9fe;color:#5b21b6}.tag.green{background:#dcfce7;color:#166534}.tag.amber{background:#fef3c7;color:#92400e}.nav a{color:#bfdbfe;font-weight:700;margin-right:12px}a{color:var(--accent);font-weight:700}code{background:#e2e8f0;padding:.15rem .35rem;border-radius:6px}pre{background:#0b1220;color:#e5e7eb;padding:16px;border-radius:14px;overflow:auto}pre code{background:transparent;padding:0}.note{background:#ecfeff;border-left:5px solid #0891b2;padding:14px;border-radius:12px}.warn{background:#fff7ed;border-left:5px solid var(--amber);padding:14px;border-radius:12px}.mental{background:#eef2ff;border-left:5px solid #4f46e5;padding:16px;border-radius:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}table{border-collapse:collapse;width:100%;overflow:auto}td,th{border:1px solid var(--line);padding:10px;text-align:left;vertical-align:top}th{background:#eef2ff}.answer{width:100%;min-height:110px;border:1px solid #cbd5e1;border-radius:12px;padding:12px;font:inherit;background:#fbfdff}.answer:focus{outline:3px solid rgba(37,99,235,.18);border-color:var(--accent)}.toolbar{position:sticky;bottom:0;background:rgba(241,245,249,.94);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:12px 22px;z-index:5}.toolbar .wrap{display:flex;gap:10px;flex-wrap:wrap}.btn{border:0;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer;background:var(--accent);color:#fff}.btn.secondary{background:#334155}.btn.good{background:var(--green)}.btn.warn{background:var(--amber)}.status{color:var(--muted);font-weight:700;padding:10px}.check label{display:block;margin:.45rem 0}.rubric li{margin:.35rem 0}.small{color:var(--muted);font-size:.95rem}</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <nav class="nav"><a href="../index.html">← Home</a><a href="../setup/downloads.html">Setup</a><a href="../course/00-course-format-and-roadmap.html">Roadmap</a></nav>
+    <p><span class="tag green">Lesson 1</span><span class="tag">cloud storage</span><span class="tag purple">cloud databases</span><span class="tag amber">Snowflake-style architecture</span></p>
+    <h1>Cloud Storage Fundamentals and Cloud Database Architecture</h1>
+    <p>Learn how object storage, columnar files, compute/storage separation, metadata services, and cloud warehouses fit together. Then run a small DuckDB + Parquet experiment and submit your reasoning.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card">
+    <h2>Learning goals</h2>
+    <div class="grid">
+      <div class="card mini"><h3>Separate storage types</h3><p>Know why object storage, block storage, OLTP databases, streams, and warehouses are not interchangeable.</p></div>
+      <div class="card mini"><h3>Understand cloud database layers</h3><p>Identify storage, compute, and control/metadata layers in Snowflake-style systems.</p></div>
+      <div class="card mini"><h3>Reason from access patterns</h3><p>Choose storage based on point lookups, scans, joins, latency, freshness, and cost.</p></div>
+      <div class="card mini"><h3>Produce a submission</h3><p>Run the lab, answer the questions, and export a Markdown submission to paste into chat.</p></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Things you should know first</h2>
+    <div class="grid">
+      <article class="card mini"><h3>1. Object storage is not a database</h3><p>Object storage stores bytes behind object keys. It is great for logs, media, backups, and data-lake files. By itself, it does not give you SQL planning, indexes, transactions, constraints, or joins.</p></article>
+      <article class="card mini"><h3>2. OLTP and OLAP optimize for different work</h3><p>OLTP systems care about low-latency writes, point reads, constraints, and transactions. OLAP systems care about scans, compression, aggregation, joins, column pruning, and large analytical queries.</p></article>
+      <article class="card mini"><h3>3. Cloud warehouses often separate compute and storage</h3><p>Storage can live in durable cloud storage while compute clusters scale independently to run queries.</p></article>
+      <article class="card mini"><h3>4. Metadata is a real system component</h3><p>Catalogs, table schemas, statistics, permissions, file lists, micro-partition metadata, and query coordination often live in a control-plane layer.</p></article>
+    </div>
+  </section>
+
+  <section class="card two">
+    <div>
+      <h2>Mental model</h2>
+      <p>Use this whenever looking at a cloud data system:</p>
+      <div class="mental">Application or analyst<br>  → SQL/API endpoint<br>    → cloud services / metadata / optimizer<br>      → compute workers / virtual warehouse<br>        → files, objects, pages, partitions, or shards</div>
+      <p>The most important habit: ask whether the system is optimized for <strong>serving application requests</strong>, <strong>processing events</strong>, or <strong>analyzing large datasets</strong>.</p>
+    </div>
+    <div>
+      <h2>Snowflake-style anchor</h2>
+      <p>For this course, treat Snowflake as a useful architecture example:</p>
+      <ul>
+        <li><strong>Database storage:</strong> compressed columnar table data in cloud storage.</li>
+        <li><strong>Compute:</strong> virtual warehouses that process SQL.</li>
+        <li><strong>Cloud services:</strong> authentication, metadata, query parsing, optimization, and coordination.</li>
+        <li><strong>Micro-partitions:</strong> automatic storage units with metadata that can be pruned during queries.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Technology comparison</h2>
+    <table>
+      <thead><tr><th>System type</th><th>Storage model</th><th>Good for</th><th>Usually weak for</th></tr></thead>
+      <tbody>
+        <tr><td>Postgres</td><td>Rows/pages/indexes on managed or local storage</td><td>OLTP, constraints, joins, transactions</td><td>Elastic warehouse-scale analytics</td></tr>
+        <tr><td>Snowflake-style warehouse</td><td>Cloud storage + columnar storage units + metadata</td><td>Analytics, scans, aggregations, BI, ad hoc SQL</td><td>Low-latency app writes and transactional point updates</td></tr>
+        <tr><td>S3/object storage + query engine</td><td>Files/objects such as Parquet</td><td>Cheap raw data, data lake, backfills</td><td>App-serving transactions</td></tr>
+        <tr><td>DynamoDB-style KV/document</td><td>Managed partitioned key-value/document storage</td><td>Predictable key-based access at scale</td><td>Arbitrary joins and flexible SQL</td></tr>
+        <tr><td>Kafka/Kinesis-style stream</td><td>Append-only ordered logs split into partitions/shards</td><td>Event movement, replay, async processing</td><td>Serving arbitrary queries directly</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card" id="lab">
+    <h2>Hands-on lab: DuckDB + Parquet</h2>
+    <p>This lab simulates a tiny version of cloud analytics: a query engine reading columnar files. DuckDB is not Snowflake, but the exercise helps you feel the difference between querying files and serving OLTP rows.</p>
+    <p>Detailed setup lives in <a href="../setup/downloads.html">setup/downloads.html</a>. Lab starter files also live under <code>labs/cloud-storage-duckdb/</code>.</p>
+    <h3>Quick setup</h3>
+    <pre><code>cd labs/cloud-storage-duckdb
+python -m venv .venv
+source .venv/bin/activate      # macOS/Linux
+# .venv\Scripts\activate       # Windows PowerShell
+pip install duckdb pandas pyarrow
+python generate_data.py
+python run_queries.py</code></pre>
+    <h3>What to observe</h3>
+    <ol>
+      <li>Which query appears to scan the most data?</li>
+      <li>Does filtering by <code>day</code> help?</li>
+      <li>Why might directory layout help a query engine skip work?</li>
+      <li>Why is this different from a B-tree index?</li>
+      <li>What is similar between Parquet file skipping and Snowflake micro-partition pruning?</li>
+      <li>Why is this better for analytics than for OLTP writes?</li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <h2>Design questions</h2>
+    <h3>Question A: media storage</h3>
+    <p>You are designing a video app. For each piece of data, decide whether it belongs in a database, object storage, a stream, or a derived warehouse table.</p>
+    <table>
+      <thead><tr><th>Data</th><th>Likely home</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Video file</td><td></td><td></td></tr>
+        <tr><td>Thumbnail</td><td></td><td></td></tr>
+        <tr><td>Title and description</td><td></td><td></td></tr>
+        <tr><td>Comments</td><td></td><td></td></tr>
+        <tr><td>Raw watch events</td><td></td><td></td></tr>
+        <tr><td>Daily view counts</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <h3>Question B: 5 billion click events</h3>
+    <p>A product team wants to analyze 5 billion click events. They need cheap raw storage, daily aggregation, ad hoc analyst queries, no impact on the production app, and backfills. Design the source of truth, ingestion path, storage format, compute engine, partitioning/clustering strategy, cost risk, and failure mode.</p>
+    <h3>Question C: database choice</h3>
+    <p>Choose among Postgres, Snowflake-style warehouse, object storage + query engine, DynamoDB-style KV/document, Kafka/Kinesis-style stream, Redis, or search index for these workloads:</p>
+    <ol><li>user login sessions</li><li>order checkout</li><li>raw clickstream events</li><li>monthly revenue dashboard</li><li>product search</li><li>image uploads</li><li>notification badge count</li></ol>
+  </section>
+
+  <section class="card">
+    <h2>Verification checklist</h2>
+    <p>A strong answer should include these claims in your own words:</p>
+    <ul class="rubric">
+      <li>Object storage is not a replacement for a transactional database.</li>
+      <li>Cloud analytic databases often separate compute, storage, and metadata/control-plane work.</li>
+      <li>Micro-partitioning/pruning is not the same thing as a regular B-tree index.</li>
+      <li>Storage layout affects query cost.</li>
+      <li>Analytics systems optimize scans, compression, column pruning, and partition pruning.</li>
+      <li>OLTP systems optimize point lookups, constraints, indexes, and transactions.</li>
+      <li>Cloud design should include cost, reliability, observability, and failure modes.</li>
+    </ul>
+  </section>
+
+  <section class="card" id="submission">
+    <h2>Your submission workspace</h2>
+    <p class="note">Type your answers here. Use <strong>Save Draft</strong> to keep them in this browser. Use <strong>Copy Submission</strong> or <strong>Download Submission</strong> when ready to submit in chat.</p>
+
+    <label><strong>1. Summary: object storage vs database storage</strong></label>
+    <textarea class="answer" data-title="1. Summary: object storage vs database storage" placeholder="Explain this in your own words..."></textarea>
+
+    <label><strong>2. Snowflake-style architecture diagram in text</strong></label>
+    <textarea class="answer" data-title="2. Snowflake-style architecture diagram in text" placeholder="Example: client -> cloud services -> warehouse -> storage..."></textarea>
+
+    <label><strong>3. DuckDB/Parquet experiment results</strong></label>
+    <textarea class="answer" data-title="3. DuckDB/Parquet experiment results" placeholder="Paste timings, plan observations, surprises..."></textarea>
+
+    <label><strong>4. Media storage table answers</strong></label>
+    <textarea class="answer" data-title="4. Media storage table answers" placeholder="Video file -> object storage because..."></textarea>
+
+    <label><strong>5. Analytics pipeline design for 5 billion click events</strong></label>
+    <textarea class="answer" data-title="5. Analytics pipeline design for 5 billion click events" placeholder="Source of truth, event ingestion, storage format, compute engine, partitioning, cost, failure modes..."></textarea>
+
+    <label><strong>6. Database choice answers</strong></label>
+    <textarea class="answer" data-title="6. Database choice answers" placeholder="For each workload, choose storage and justify..."></textarea>
+
+    <label><strong>7. Questions / uncertainties for review</strong></label>
+    <textarea class="answer" data-title="7. Questions / uncertainties for review" placeholder="What are you unsure about?"></textarea>
+  </section>
+</main>
+
+<div class="toolbar"><div class="wrap"><button class="btn good" onclick="saveDraft()">Save Draft</button><button class="btn secondary" onclick="loadDraft()">Load Draft</button><button class="btn" onclick="copySubmission()">Copy Submission</button><button class="btn warn" onclick="downloadSubmission()">Download Submission</button><span class="status" id="status">Draft not saved yet.</span></div></div>
+
+<script>
+const lessonKey = 'lesson-01-cloud-storage-answers-v1';
+function collect(){
+  const rows=[...document.querySelectorAll('textarea.answer')].map((el,i)=>({title:el.dataset.title || `Answer ${i+1}`, value:el.value.trim()}));
+  return rows;
+}
+function toMarkdown(){
+  const rows=collect();
+  let out='# Lesson 1 Submission: Cloud Storage and Cloud Database Architecture\n\n';
+  for(const r of rows){out += `## ${r.title}\n\n${r.value || '_No answer yet._'}\n\n`;}
+  return out;
+}
+function saveDraft(){localStorage.setItem(lessonKey, JSON.stringify(collect()));setStatus('Saved draft locally.');}
+function loadDraft(){const raw=localStorage.getItem(lessonKey);if(!raw){setStatus('No saved draft found.');return;}const rows=JSON.parse(raw);document.querySelectorAll('textarea.answer').forEach((el,i)=>{el.value=rows[i]?.value || '';});setStatus('Loaded saved draft.');}
+async function copySubmission(){const text=toMarkdown();try{await navigator.clipboard.writeText(text);setStatus('Copied submission to clipboard.');}catch(e){setStatus('Clipboard failed; use Download Submission instead.');}}
+function downloadSubmission(){const blob=new Blob([toMarkdown()],{type:'text/markdown'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='lesson-01-cloud-storage-submission.md';a.click();URL.revokeObjectURL(a.href);setStatus('Downloaded submission Markdown.');}
+function setStatus(msg){document.getElementById('status').textContent=msg;}
+window.addEventListener('load',()=>{if(localStorage.getItem(lessonKey)) setStatus('Saved draft found. Click Load Draft.');});
+</script>
+</body>
+</html>
