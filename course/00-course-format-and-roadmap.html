@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Course Format and Roadmap</title>
+  <style>
+    :root{--bg:#0f172a;--ink:#172033;--muted:#64748b;--line:#dbe4ef;--card:#fff;--accent:#2563eb;--purple:#7c3aed}*{box-sizing:border-box}body{margin:0;background:#f1f5f9;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.6}.top{background:linear-gradient(135deg,#0f172a,#312e81);color:#fff;padding:34px 22px}.wrap{max-width:1040px;margin:0 auto}main{padding:26px 22px 70px}.card{background:white;border:1px solid var(--line);border-radius:18px;padding:22px;margin:16px 0;box-shadow:0 8px 24px rgba(15,23,42,.06)}h1{margin:.2rem 0;font-size:clamp(2rem,4vw,3.2rem)}h2{margin-top:0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}.step{border-left:5px solid var(--accent)}.topic{border-left:5px solid var(--purple)}code{background:#e2e8f0;padding:.15rem .35rem;border-radius:6px}.tag{display:inline-block;background:#e0e7ff;color:#3730a3;padding:4px 10px;border-radius:999px;font-weight:700;font-size:.85rem;margin:3px}a{color:#93c5fd;font-weight:700}.card a{color:var(--accent)}table{border-collapse:collapse;width:100%;overflow:auto}td,th{border:1px solid var(--line);padding:10px;text-align:left}th{background:#eef2ff}.note{background:#ecfeff;border-left:5px solid #0891b2;padding:14px;border-radius:12px}</style>
+</head>
+<body>
+<header class="top"><div class="wrap"><p><a href="../index.html">← Home</a></p><h1>Course Format and Roadmap</h1><p>One topic per lesson. Each lesson teaches the background, then asks you to experiment, answer questions, and submit a design artifact for review.</p></div></header>
+<main class="wrap">
+  <section class="card">
+    <h2>Lesson shape</h2>
+    <div class="grid">
+      <div class="card step"><h3>1. What you should know</h3><p>Definitions, mental model, and the details that usually trip people up.</p></div>
+      <div class="card step"><h3>2. Try the technology</h3><p>A small experiment using a real tool: DuckDB, Postgres, Docker, Redis, or a stream system.</p></div>
+      <div class="card step"><h3>3. Answer questions</h3><p>Prediction questions, observation questions, and design questions.</p></div>
+      <div class="card step"><h3>4. Submit</h3><p>Use the HTML answer boxes, export your submission, and paste it into chat for review.</p></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>First topic sequence</h2>
+    <table>
+      <thead><tr><th>#</th><th>Topic</th><th>Why it matters</th><th>Hands-on</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Cloud storage fundamentals and cloud database architecture</td><td>Separates object storage, OLTP databases, data warehouses, compute, storage, and metadata layers.</td><td>DuckDB + Parquet</td></tr>
+        <tr><td>2</td><td>Partitioning: cloud vs non-cloud</td><td>Builds the foundation for sharding, hot partitions, pruning, and cloud partition keys.</td><td>Postgres partitions + hot-key simulation</td></tr>
+        <tr><td>3</td><td>Query plans, optimizers, and joins</td><td>Turns SQL from magic into physical operators and cost estimates.</td><td>Postgres EXPLAIN ANALYZE</td></tr>
+        <tr><td>4</td><td>Locking, isolation, optimistic/pessimistic concurrency, and phantoms</td><td>Connects database behavior to correctness in products like ticketing, inventory, and payments.</td><td>Two-terminal transaction labs</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Later topic pool</h2>
+    <p><span class="tag">Rate limiter</span><span class="tag">TinyURL / Pastebin</span><span class="tag">Web crawler</span><span class="tag">Social feed</span><span class="tag">Ticketmaster-style reservations</span><span class="tag">Reddit comments</span><span class="tag">Leaderboard / Top-K</span><span class="tag">Unique active users</span><span class="tag">Distributed job scheduler</span><span class="tag">Distributed locking</span><span class="tag">Ad click aggregator</span><span class="tag">Kafka pipelines</span><span class="tag">Search indexing</span><span class="tag">Notification platform capstone</span></p>
+  </section>
+
+  <section class="card">
+    <h2>Review rubric</h2>
+    <table>
+      <thead><tr><th>Area</th><th>What I will check</th></tr></thead>
+      <tbody>
+        <tr><td>Access patterns</td><td>Did the design start with reads/writes instead of technology names?</td></tr>
+        <tr><td>Data model</td><td>Does the schema/key model support the product behavior?</td></tr>
+        <tr><td>Indexes and plans</td><td>Do the indexes match the query shapes?</td></tr>
+        <tr><td>Partitioning/sharding</td><td>Does the placement strategy avoid obvious hotspots?</td></tr>
+        <tr><td>Correctness</td><td>Are concurrency, retries, idempotency, and consistency handled?</td></tr>
+        <tr><td>Cloud realism</td><td>Does the design mention managed services, regions/AZs, cost, and observability?</td></tr>
+        <tr><td>Failure modes</td><td>Does the design admit what breaks and how recovery works?</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Submission rule</h2>
+    <p class="note">For each lesson, the deliverable is not a polished essay. It should be your best current explanation plus experiment results. Submit even if uncertain; the review is where we tighten the details.</p>
+  </section>
+</main>
+</body>
+</html>
