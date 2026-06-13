@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DuckDB + Parquet Lab</title>
+  <style>body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f1f5f9;color:#172033;line-height:1.6;margin:0}.wrap{max-width:920px;margin:0 auto;padding:28px 22px}.hero{background:#0f172a;color:white}.card{background:white;border:1px solid #dbe4ef;border-radius:16px;padding:20px;margin:16px 0;box-shadow:0 8px 24px rgba(15,23,42,.06)}pre{background:#0b1220;color:#e5e7eb;padding:16px;border-radius:14px;overflow:auto}code{background:#e2e8f0;padding:.15rem .35rem;border-radius:6px}pre code{background:transparent;padding:0}a{color:#2563eb;font-weight:700}.hero a{color:#bfdbfe}</style>
+</head>
+<body>
+<header class="hero"><div class="wrap"><p><a href="../../index.html">← Home</a> · <a href="../../lessons/01-cloud-storage-and-cloud-database-architecture.html">Lesson 1</a></p><h1>Lab: DuckDB + Parquet</h1><p>Simulate a tiny cloud analytics workflow locally.</p></div></header>
+<main class="wrap">
+  <section class="card"><h2>Goal</h2><p>Generate partitioned Parquet files, query them with DuckDB, and reason about scans, pruning, and storage layout.</p></section>
+  <section class="card"><h2>Setup</h2><pre><code>python -m venv .venv
+source .venv/bin/activate      # macOS/Linux
+# .venv\Scripts\activate       # Windows PowerShell
+pip install duckdb pandas pyarrow</code></pre></section>
+  <section class="card"><h2>Run</h2><pre><code>python generate_data.py
+python run_queries.py</code></pre></section>
+  <section class="card"><h2>Record these observations</h2><ol><li>Which query is slowest?</li><li>Which query appears to read less?</li><li>Does filtering on <code>day</code> help?</li><li>How would results change if the data were one huge CSV?</li><li>What does this teach you about warehouse storage design?</li></ol></section>
+</main>
+</body>
+</html>
