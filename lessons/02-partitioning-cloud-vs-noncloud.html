@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lesson 2 - Partitioning: Cloud vs Non-Cloud</title>
+  <style>
+    :root{
+      --bg:#0f172a;--ink:#172033;--muted:#64748b;--line:#dbe4ef;--card:#fff;
+      --soft:#eff6ff;--accent:#2563eb;--purple:#7c3aed;--green:#047857;
+      --amber:#b45309;--red:#b91c1c;--cyan:#0e7490
+    }
+    *{box-sizing:border-box}html{scroll-behavior:smooth}
+    body{margin:0;background:#f1f5f9;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.62}
+    .top{background:linear-gradient(135deg,#0f172a,#172554 55%,#4c1d95);color:#fff;padding:36px 22px}
+    .wrap{max-width:1120px;margin:0 auto}main{padding:26px 22px 80px}
+    .card{background:white;border:1px solid var(--line);border-radius:18px;padding:23px;margin:17px 0;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+    .mini{padding:16px;margin:0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px}
+    .two{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}@media(max-width:860px){.two{grid-template-columns:1fr}}
+    h1{font-size:clamp(2rem,5vw,3.7rem);line-height:1.05;margin:.2rem 0 12px}
+    h2{margin-top:0;line-height:1.2}h3{margin-bottom:.4rem}
+    a{color:var(--accent);font-weight:700}.nav a{color:#bfdbfe;margin-right:14px}
+    .tag{display:inline-block;background:#dbeafe;color:#1e40af;padding:4px 10px;border-radius:999px;font-weight:750;font-size:.84rem;margin:3px}
+    .tag.purple{background:#ede9fe;color:#5b21b6}.tag.green{background:#dcfce7;color:#166534}.tag.amber{background:#fef3c7;color:#92400e}
+    code{background:#e2e8f0;padding:.15rem .35rem;border-radius:6px}
+    pre{background:#0b1220;color:#e5e7eb;padding:17px;border-radius:14px;overflow:auto;line-height:1.5}
+    pre code{background:transparent;padding:0}
+    table{border-collapse:collapse;width:100%;display:block;overflow:auto}
+    td,th{border:1px solid var(--line);padding:10px;text-align:left;vertical-align:top;min-width:130px}
+    th{background:#eef2ff}
+    .note{background:#ecfeff;border-left:5px solid var(--cyan);padding:15px;border-radius:12px}
+    .warn{background:#fff7ed;border-left:5px solid var(--amber);padding:15px;border-radius:12px}
+    .good{background:#ecfdf5;border-left:5px solid var(--green);padding:15px;border-radius:12px}
+    .mental{background:#eef2ff;border-left:5px solid #4f46e5;padding:16px;border-radius:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow:auto}
+    .diagram{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:12px;margin:14px 0}
+    .node{border:2px solid #c7d2fe;background:#f8fafc;border-radius:14px;padding:14px;text-align:center}
+    .node strong{display:block;color:#3730a3}.small{color:var(--muted);font-size:.95rem}
+    .button{display:inline-block;background:var(--accent);color:white;text-decoration:none;padding:10px 14px;border-radius:10px;font-weight:800;margin:4px 8px 4px 0}
+    .button.secondary{background:#334155}.button.green{background:var(--green)}
+    .toc a{display:inline-block;margin:4px 12px 4px 0}.callout-title{font-weight:850;margin-bottom:4px}
+  </style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <nav class="nav">
+      <a href="../index.html">← Home</a>
+      <a href="../setup/downloads.html">Setup</a>
+      <a href="../course/00-course-format-and-roadmap.html">Roadmap</a>
+      <a href="../questions/lesson-02-partitioning-cloud-vs-noncloud.md">Questions</a>
+    </nav>
+    <p>
+      <span class="tag green">Lesson 2</span>
+      <span class="tag">partitioning</span>
+      <span class="tag purple">DDIA-inspired</span>
+      <span class="tag amber">Postgres + cloud</span>
+    </p>
+    <h1>Partitioning: Cloud vs Non-Cloud</h1>
+    <p>Learn how systems split data, route requests, prune reads, rebalance capacity, and fail when one key becomes hot. Then prove the ideas with PostgreSQL and a hot-partition simulator.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card">
+    <h2>How to use this lesson</h2>
+    <p>The HTML contains the teaching material and lab instructions. All prompts are kept in one file:</p>
+    <p><a class="button" href="../questions/lesson-02-partitioning-cloud-vs-noncloud.md">Open Lesson 2 questions</a></p>
+    <p>Create your answer file as <code>labs/partitioning-postgres/answers_lab02.md</code>. I will review that file after you commit it.</p>
+    <div class="note"><strong>DDIA lens:</strong> do not stop at “which key splits the data?” Also track placement, request routing, skew, rebalancing, and secondary-index behavior.</div>
+  </section>
+
+  <section class="card toc">
+    <h2>Lesson map</h2>
+    <a href="#foundation">Foundations</a>
+    <a href="#methods">Range, hash, list</a>
+    <a href="#cloud">Cloud comparison</a>
+    <a href="#examples">Product examples</a>
+    <a href="#lab-a">Lab A: Postgres pruning</a>
+    <a href="#lab-b">Lab B: hash partitions</a>
+    <a href="#lab-c">Lab C: hot key</a>
+    <a href="#pitfalls">Pitfalls</a>
+  </section>
+
+  <section class="card" id="foundation">
+    <h2>Things you should know first</h2>
+    <div class="grid">
+      <article class="card mini"><h3>Partitioning</h3><p>Split one logical dataset into smaller pieces according to a rule. The pieces may remain on one database server or be distributed.</p></article>
+      <article class="card mini"><h3>Partition key</h3><p>The value used to decide where a record belongs. Its quality depends on both data distribution and access patterns.</p></article>
+      <article class="card mini"><h3>Partition pruning</h3><p>Exclude partitions that provably cannot match a query. Pruning avoids work; it does not magically make every query fast.</p></article>
+      <article class="card mini"><h3>Sharding</h3><p>Partition data across multiple machines or database instances. Sharding adds routing, failures, rebalancing, and cross-shard operations.</p></article>
+      <article class="card mini"><h3>Replication</h3><p>Keep copies of the same data for availability or read scale. Partitioning divides data; replication copies it.</p></article>
+      <article class="card mini"><h3>Hot partition</h3><p>One partition receives much more traffic or storage than others. A mathematically even hash does not fix a single extremely hot key.</p></article>
+    </div>
+  </section>
+
+  <section class="card two">
+    <div>
+      <h2>Partitioning is not automatically distributed</h2>
+      <div class="mental">One PostgreSQL instance
+  logical table: events
+    ├── events_2026_01
+    ├── events_2026_02
+    └── events_2026_03
+
+All pieces can still live on one server.</div>
+    </div>
+    <div>
+      <h2>Sharding adds network boundaries</h2>
+      <div class="mental">Application / router
+    ├── shard A → users 0–9999
+    ├── shard B → users 10000–19999
+    └── shard C → users 20000–29999
+
+Now routing and cross-shard work matter.</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>The five-part DDIA-style checklist</h2>
+    <div class="diagram">
+      <div class="node"><strong>1. Placement</strong>Which key/rule places a record?</div>
+      <div class="node"><strong>2. Routing</strong>How does a request find the right piece?</div>
+      <div class="node"><strong>3. Skew</strong>Can one key or range dominate?</div>
+      <div class="node"><strong>4. Rebalancing</strong>What moves when capacity changes?</div>
+      <div class="node"><strong>5. Indexes</strong>Are secondary lookups local or scattered?</div>
+    </div>
+    <p class="small">This course uses DDIA for its comparative, tradeoff-first style—not as a chapter reproduction.</p>
+  </section>
+
+  <section class="card" id="methods">
+    <h2>Three common partitioning methods</h2>
+    <table>
+      <thead><tr><th>Method</th><th>Placement rule</th><th>Strength</th><th>Main risk</th><th>Typical use</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Range</strong></td><td>Key falls between lower and upper bounds.</td><td>Excellent for range queries and lifecycle operations.</td><td>Sequential keys can concentrate new writes in one range.</td><td>Events by month, orders by date, numeric ID ranges.</td></tr>
+        <tr><td><strong>Hash</strong></td><td><code>hash(key) mod N</code> or a token/slot scheme.</td><td>Usually spreads distinct keys more evenly.</td><td>Destroys useful ordering and cannot split one hot key by itself.</td><td>User/session placement, distributed KV records.</td></tr>
+        <tr><td><strong>List</strong></td><td>Explicit values map to named partitions.</td><td>Easy operational control by region, tier, or category.</td><td>Uneven categories and ongoing manual maintenance.</td><td>Region, regulatory zone, tenant class.</td></tr>
+      </tbody>
+    </table>
+    <div class="warn"><strong>Partition key choice is workload design.</strong> A key can be excellent for one query and poor for another. A date key helps time-range scans but not user lookups. A user hash helps equality routing but not date-range pruning.</div>
+  </section>
+
+  <section class="card" id="cloud">
+    <h2>How “partition” changes across systems</h2>
+    <table>
+      <thead><tr><th>System</th><th>What the piece is</th><th>Who controls it</th><th>How reads skip/route</th><th>Important caveat</th></tr></thead>
+      <tbody>
+        <tr><td>PostgreSQL</td><td>Child tables behind one virtual parent table.</td><td>You define range/list/hash partitions.</td><td>The planner prunes child tables using partition bounds.</td><td>Still one database unless you shard it separately.</td></tr>
+        <tr><td>Parquet data lake</td><td>Folders/files/row groups.</td><td>You or a table format/ingestion job controls layout.</td><td>Path, file, and row-group metadata enable skipping.</td><td>Too many tiny files can become an operational problem.</td></tr>
+        <tr><td>Snowflake</td><td>Automatic columnar micro-partitions.</td><td>Snowflake manages them; you influence clustering through load order and optional clustering keys.</td><td>Metadata such as column ranges enables pruning.</td><td>This is not the same as manually defining Postgres partitions.</td></tr>
+        <tr><td>DynamoDB</td><td>Managed physical storage partitions behind partition keys.</td><td>AWS manages physical partitions; you design item keys and access patterns.</td><td>The partition key determines item placement/routing.</td><td>Uneven key activity can create hot-partition pressure.</td></tr>
+        <tr><td>Sharded relational DB</td><td>Separate database instances or node groups.</td><td>Your application, middleware, or distributed DB controls routing.</td><td>A router maps a shard key to a node.</td><td>Joins, transactions, and uniqueness across shards get harder.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card" id="examples">
+    <h2>Practical product examples</h2>
+    <div class="grid">
+      <article class="card mini"><h3>Event retention</h3><p>Range partitions by month make recent-window scans and old-data removal natural. The newest partition may receive nearly all writes.</p></article>
+      <article class="card mini"><h3>User sessions</h3><p>Hashing by user ID spreads many users well and supports direct equality routing. A single celebrity or bot key can still become hot.</p></article>
+      <article class="card mini"><h3>Chat messages</h3><p>Partitioning by conversation keeps message history together. A huge group chat can overwhelm one partition, so the design may need time buckets.</p></article>
+      <article class="card mini"><h3>Multi-tenant SaaS</h3><p>Tenant ID provides isolation and tenant-local queries. One enterprise tenant can dwarf all others, creating storage and throughput skew.</p></article>
+      <article class="card mini"><h3>Orders</h3><p>Customer-based placement helps “my orders”; order-ID placement helps direct order lookup. Reporting by time may require another index or derived system.</p></article>
+      <article class="card mini"><h3>Metrics</h3><p>Time partitions support retention, while hashing within a time window can distribute writes. This is a common reason for two-level partitioning.</p></article>
+    </div>
+  </section>
+
+  <section class="card" id="downloads">
+    <h2>Tools and downloads</h2>
+    <p>This lesson uses PostgreSQL 16 in Docker and Python 3 for the hot-partition simulator.</p>
+    <p>
+      <a class="button" href="../setup/downloads.html">Open repo setup guide</a>
+      <a class="button secondary" href="https://docs.docker.com/get-started/get-docker/">Docker install guide</a>
+      <a class="button secondary" href="https://www.python.org/downloads/">Python downloads</a>
+    </p>
+    <pre><code>docker --version
+docker compose version
+python --version</code></pre>
+  </section>
+
+  <section class="card" id="lab-a">
+    <h2>Lab A — PostgreSQL range partitioning and pruning</h2>
+    <p>Use the provided SQL to build three versions of the same event dataset:</p>
+    <ul><li><code>events_plain</code>: one ordinary table.</li><li><code>events_by_month</code>: range-partitioned by event time.</li><li><code>events_by_user</code>: hash-partitioned by user ID.</li></ul>
+    <h3>Start PostgreSQL</h3>
+    <pre><code>cd labs
+docker compose up -d postgres
+cd ..</code></pre>
+    <h3>Load the lab</h3>
+    <pre><code>docker exec -i ds_course_postgres \
+  psql -U app -d system_design \
+  &lt; labs/partitioning-postgres/01_setup.sql</code></pre>
+    <h3>Run the experiments</h3>
+    <pre><code>docker exec -i ds_course_postgres \
+  psql -U app -d system_design \
+  &lt; labs/partitioning-postgres/02_experiments.sql</code></pre>
+    <div class="good"><div class="callout-title">Focus on plan shape, not one timing number</div>Record which child relations appear, which disappear under pruning, and what changes after pruning is disabled. Cache warmth and laptop load can distort tiny timing differences.</div>
+  </section>
+
+  <section class="card" id="lab-b">
+    <h2>Lab B — Range key vs hash key</h2>
+    <p>The same SQL file compares query shapes against both partition strategies.</p>
+    <div class="mental">Date predicate
+  → range-by-month table can prune months
+  → hash-by-user table usually checks every user partition
+
+User equality predicate
+  → hash-by-user table can route/prune by user
+  → range-by-month table usually checks every month</div>
+    <p>This is the central lesson: partitioning helps when the query contains useful information about the partition key.</p>
+  </section>
+
+  <section class="card" id="lab-c">
+    <h2>Lab C — Hot partition simulator</h2>
+    <p>The simulator compares a uniform workload, a workload dominated by one hot key, and a write-sharded version of that hot key.</p>
+    <pre><code>python labs/partitioning-postgres/hot_partition_sim.py</code></pre>
+    <p>The output prints request counts per partition and the busiest partition’s share of traffic.</p>
+    <div class="note"><strong>Key detail:</strong> adding more partitions spreads many independent keys, but one unchanged hot key still hashes to one destination. Write sharding can spread it, but reads and aggregation become more complicated.</div>
+  </section>
+
+  <section class="card">
+    <h2>Operational experiment — remove old data safely</h2>
+    <p>The experiment file demonstrates detaching a January partition inside a transaction and then rolling it back. This shows why time partitioning can simplify retention compared with deleting rows individually.</p>
+    <pre><code>BEGIN;
+ALTER TABLE events_by_month DETACH PARTITION events_2026_01;
+-- inspect parent/child behavior
+ROLLBACK;</code></pre>
+  </section>
+
+  <section class="card" id="pitfalls">
+    <h2>Common partitioning mistakes</h2>
+    <div class="grid">
+      <article class="card mini"><h3>Using a low-cardinality key</h3><p>Values such as status = pending/completed often create only a few uneven pieces.</p></article>
+      <article class="card mini"><h3>Assuming partitioning replaces indexes</h3><p>Pruning chooses relevant partitions; indexes can still locate rows inside those partitions.</p></article>
+      <article class="card mini"><h3>Creating too many pieces</h3><p>Planner time, metadata, file counts, connection pools, and operational complexity can rise.</p></article>
+      <article class="card mini"><h3>Ignoring the hottest key</h3><p>Uniform overall distribution can hide one customer, tenant, or item consuming most capacity.</p></article>
+      <article class="card mini"><h3>Forgetting cross-partition constraints</h3><p>Uniqueness and foreign-key rules may be harder to enforce when data is split across nodes.</p></article>
+      <article class="card mini"><h3>No rebalance plan</h3><p>A design is incomplete if adding nodes requires a full outage or moving nearly all data at once.</p></article>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>What mastery looks like</h2>
+    <ul>
+      <li>You distinguish partitioning, sharding, replication, clustering, pruning, and indexing.</li>
+      <li>You choose a key from access patterns and expected skew—not from column names alone.</li>
+      <li>You can explain why range and hash strategies help different queries.</li>
+      <li>You inspect query plans to verify pruning instead of assuming it occurred.</li>
+      <li>You include routing, rebalancing, secondary indexes, and hot keys in a distributed design.</li>
+    </ul>
+    <p><a class="button green" href="../questions/lesson-02-partitioning-cloud-vs-noncloud.md">Continue to the questions file</a></p>
+  </section>
+
+  <section class="card">
+    <h2>Primary references</h2>
+    <ul>
+      <li><a href="https://dataintensive.net/">Designing Data-Intensive Applications — official site</a></li>
+      <li><a href="https://www.postgresql.org/docs/current/ddl-partitioning.html">PostgreSQL table partitioning documentation</a></li>
+      <li><a href="https://docs.snowflake.com/en/user-guide/tables-clustering-micropartitions">Snowflake micro-partitions and clustering</a></li>
+      <li><a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html">DynamoDB partition-key design</a></li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
