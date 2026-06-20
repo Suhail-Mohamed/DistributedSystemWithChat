@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lesson 3 - Transactions, Isolation, Locks, and Concurrency</title>
+  <style>
+    :root{
+      --bg:#0f172a;--ink:#172033;--muted:#64748b;--line:#dbe4ef;--card:#fff;
+      --accent:#2563eb;--purple:#7c3aed;--green:#047857;--amber:#b45309;
+      --red:#b91c1c;--cyan:#0e7490
+    }
+    *{box-sizing:border-box}html{scroll-behavior:smooth}
+    body{margin:0;background:#f1f5f9;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.62}
+    .top{background:linear-gradient(135deg,#0f172a,#172554 52%,#581c87);color:#fff;padding:36px 22px}
+    .wrap{max-width:1120px;margin:0 auto}main{padding:26px 22px 80px}
+    .card{background:white;border:1px solid var(--line);border-radius:18px;padding:23px;margin:17px 0;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+    .mini{padding:16px;margin:0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px}
+    .two{display:grid;grid-template-columns:1.08fr .92fr;gap:16px}@media(max-width:860px){.two{grid-template-columns:1fr}}
+    h1{font-size:clamp(2rem,5vw,3.7rem);line-height:1.05;margin:.2rem 0 12px}
+    h2{margin-top:0;line-height:1.2}h3{margin-bottom:.4rem}
+    a{color:var(--accent);font-weight:700}.nav a{color:#bfdbfe;margin-right:14px}
+    .tag{display:inline-block;background:#dbeafe;color:#1e40af;padding:4px 10px;border-radius:999px;font-weight:750;font-size:.84rem;margin:3px}
+    .tag.purple{background:#ede9fe;color:#5b21b6}.tag.green{background:#dcfce7;color:#166534}.tag.amber{background:#fef3c7;color:#92400e}
+    code{background:#e2e8f0;padding:.15rem .35rem;border-radius:6px}
+    pre{background:#0b1220;color:#e5e7eb;padding:17px;border-radius:14px;overflow:auto;line-height:1.5}
+    pre code{background:transparent;padding:0}
+    table{border-collapse:collapse;width:100%;display:block;overflow:auto}
+    td,th{border:1px solid var(--line);padding:10px;text-align:left;vertical-align:top;min-width:135px}
+    th{background:#eef2ff}
+    .note{background:#ecfeff;border-left:5px solid var(--cyan);padding:15px;border-radius:12px}
+    .warn{background:#fff7ed;border-left:5px solid var(--amber);padding:15px;border-radius:12px}
+    .good{background:#ecfdf5;border-left:5px solid var(--green);padding:15px;border-radius:12px}
+    .danger{background:#fef2f2;border-left:5px solid var(--red);padding:15px;border-radius:12px}
+    .mental{background:#eef2ff;border-left:5px solid #4f46e5;padding:16px;border-radius:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow:auto}
+    .diagram{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:12px;margin:14px 0}
+    .node{border:2px solid #c7d2fe;background:#f8fafc;border-radius:14px;padding:14px;text-align:center}
+    .node strong{display:block;color:#3730a3}.small{color:var(--muted);font-size:.95rem}
+    .button{display:inline-block;background:var(--accent);color:white;text-decoration:none;padding:10px 14px;border-radius:10px;font-weight:800;margin:4px 8px 4px 0}
+    .button.secondary{background:#334155}.button.green{background:var(--green)}
+    .toc a{display:inline-block;margin:4px 12px 4px 0}.callout-title{font-weight:850;margin-bottom:4px}
+    .session{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:860px){.session{grid-template-columns:1fr}}
+    .session article{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fbfdff}
+  </style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <nav class="nav">
+      <a href="../index.html">← Home</a>
+      <a href="../setup/downloads.html">Setup</a>
+      <a href="../course/00-course-format-and-roadmap.html">Roadmap</a>
+      <a href="../questions/lesson-03-transactions-isolation-locks-concurrency.md">Questions</a>
+    </nav>
+    <p>
+      <span class="tag green">Lesson 3</span>
+      <span class="tag">transactions</span>
+      <span class="tag purple">DDIA-inspired</span>
+      <span class="tag amber">PostgreSQL two-session labs</span>
+    </p>
+    <h1>Transactions, Isolation, Locks, and Concurrent Access</h1>
+    <p>Understand how databases let many clients read and write safely at once—using snapshots, row versions, locks, conflict detection, deadlock handling, and transaction retries.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card">
+    <h2>How to use this lesson</h2>
+    <p>The HTML contains concepts and lab steps. Every prediction and review prompt is kept in one file:</p>
+    <p><a class="button" href="../questions/lesson-03-transactions-isolation-locks-concurrency.md">Open Lesson 3 questions</a></p>
+    <p>Write your answers in <code>labs/transactions-postgres/answers_lab03.md</code>.</p>
+    <div class="note"><strong>DDIA lens:</strong> transaction isolation is not one on/off feature. Different systems prevent different anomalies using different combinations of versions, locks, validation, and abort/retry.</div>
+  </section>
+
+  <section class="card toc">
+    <h2>Lesson map</h2>
+    <a href="#mental-model">Mental model</a>
+    <a href="#locks">Read/write locks</a>
+    <a href="#isolation">Isolation levels</a>
+    <a href="#anomalies">Anomalies</a>
+    <a href="#lab-setup">Lab setup</a>
+    <a href="#snapshots">Snapshots</a>
+    <a href="#locking-lab">Locking reads</a>
+    <a href="#optimistic">Optimistic locking</a>
+    <a href="#write-skew">Write skew</a>
+    <a href="#deadlocks">Deadlocks</a>
+    <a href="#cloud">Cloud angle</a>
+  </section>
+
+  <section class="card" id="mental-model">
+    <h2>How a database handles concurrent access</h2>
+    <div class="mental">Transaction request
+  → transaction manager assigns transaction/snapshot state
+    → executor reads visible row versions
+      → lock manager coordinates conflicting operations
+        → writer creates or replaces a row version
+          → WAL / durability machinery records the change
+            → COMMIT makes the result durable and visible</div>
+    <div class="grid" style="margin-top:16px">
+      <article class="card mini"><h3>MVCC / versions</h3><p>Readers often inspect a snapshot and choose the row version visible to that transaction instead of blocking every writer.</p></article>
+      <article class="card mini"><h3>Lock manager</h3><p>Tracks incompatible operations, makes transactions wait, and helps detect deadlocks.</p></article>
+      <article class="card mini"><h3>Validation</h3><p>Optimistic and serializable schemes may allow work to proceed, then reject one transaction when a conflict is detected.</p></article>
+      <article class="card mini"><h3>Retry loop</h3><p>Serialization failures, deadlocks, failovers, and optimistic conflicts are normal outcomes that applications must handle safely.</p></article>
+    </div>
+  </section>
+
+  <section class="card two">
+    <div>
+      <h2>Transaction locks vs internal latches</h2>
+      <p><strong>Transaction locks</strong> protect logical database objects and can be held until commit or rollback.</p>
+      <p><strong>Latches/mutexes</strong> protect in-memory database structures for very short periods. They are an engine-internals mechanism, not an application transaction feature.</p>
+    </div>
+    <div>
+      <h2>Isolation vs durability</h2>
+      <p><strong>Isolation</strong> controls what concurrent transactions may observe and which combinations may commit.</p>
+      <p><strong>Durability</strong> controls whether committed work survives crashes. WAL and fsync are durability topics, not substitutes for isolation.</p>
+    </div>
+  </section>
+
+  <section class="card" id="locks">
+    <h2>Read locks and write locks</h2>
+    <table>
+      <thead><tr><th>Concept</th><th>Generic meaning</th><th>PostgreSQL anchor</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td>Shared/read lock</td><td>Multiple readers may coexist, but incompatible writers wait.</td><td><code>SELECT ... FOR SHARE</code> is an explicit locking read.</td><td>Useful when a later decision depends on the row remaining unchanged.</td></tr>
+        <tr><td>Exclusive/write lock</td><td>A writer prevents incompatible changes to the same object.</td><td><code>UPDATE</code>, <code>DELETE</code>, and <code>SELECT ... FOR UPDATE</code> coordinate through row locks.</td><td>Conflicting transactions wait, fail fast, or time out.</td></tr>
+        <tr><td>Predicate/range protection</td><td>Protects the result of a condition, including rows that do not exist yet.</td><td>PostgreSQL Serializable tracks predicate-style read/write dependencies.</td><td>Helps prevent phantoms and serialization anomalies.</td></tr>
+        <tr><td>Table lock</td><td>Coordinates operations affecting an entire table or its definition.</td><td>Ordinary commands automatically take table-level modes; strong DDL locks may block readers/writers.</td><td>Essential for schema safety, but coarse locks reduce concurrency.</td></tr>
+      </tbody>
+    </table>
+    <div class="warn"><strong>Important PostgreSQL detail:</strong> an ordinary <code>SELECT</code> normally does not take a row-level read lock. MVCC lets it read a snapshot while writers create newer row versions. Use <code>FOR SHARE</code> or <code>FOR UPDATE</code> only when the application needs a locking read.</div>
+  </section>
+
+  <section class="card">
+    <h2>Common PostgreSQL row-locking clauses</h2>
+    <table>
+      <thead><tr><th>Clause</th><th>Typical intent</th><th>Strength</th></tr></thead>
+      <tbody>
+        <tr><td><code>FOR KEY SHARE</code></td><td>Protect a referenced key from deletion or key-changing updates.</td><td>Weakest row-locking clause.</td></tr>
+        <tr><td><code>FOR SHARE</code></td><td>Take a shared lock because a decision depends on the selected row.</td><td>Allows compatible shared lockers; blocks conflicting updates.</td></tr>
+        <tr><td><code>FOR NO KEY UPDATE</code></td><td>Reserve a row for an update that does not change key identity.</td><td>Stronger than share, weaker than full update lock.</td></tr>
+        <tr><td><code>FOR UPDATE</code></td><td>Reserve rows for a write-sensitive workflow.</td><td>Strongest row lock among these clauses.</td></tr>
+      </tbody>
+    </table>
+    <p class="small"><code>NOWAIT</code> fails immediately rather than waiting. <code>SKIP LOCKED</code> skips locked rows and is useful for queue workers, but it deliberately returns an inconsistent view of the full table.</p>
+  </section>
+
+  <section class="card" id="isolation">
+    <h2>Isolation levels: standard idea vs PostgreSQL behavior</h2>
+    <table>
+      <thead><tr><th>Level</th><th>Snapshot idea</th><th>Possible issues</th><th>PostgreSQL note</th></tr></thead>
+      <tbody>
+        <tr><td>Read Uncommitted</td><td>Weakest standard level.</td><td>Standard permits dirty reads.</td><td>Behaves like Read Committed; PostgreSQL does not expose dirty reads.</td></tr>
+        <tr><td>Read Committed</td><td>Fresh committed snapshot for each statement.</td><td>Nonrepeatable reads, phantoms, application-level lost updates, serialization anomalies.</td><td>Default PostgreSQL level.</td></tr>
+        <tr><td>Repeatable Read</td><td>Stable transaction snapshot.</td><td>Snapshot-isolation anomalies such as write skew can remain.</td><td>PostgreSQL also prevents phantoms at this level, but conflicting writes may abort.</td></tr>
+        <tr><td>Serializable</td><td>Committed results must match some serial order.</td><td>Transactions may be aborted and must be retried.</td><td>PostgreSQL uses Serializable Snapshot Isolation and dependency detection.</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><strong>Implementations vary.</strong> The SQL level name is not enough to predict every behavior across PostgreSQL, MySQL, SQL Server, Oracle, or distributed databases. Verify the product’s documented guarantees.</div>
+  </section>
+
+  <section class="card" id="anomalies">
+    <h2>Concurrency anomalies to recognize</h2>
+    <div class="grid">
+      <article class="card mini"><h3>Dirty read</h3><p>Read another transaction’s uncommitted data, which might later roll back.</p></article>
+      <article class="card mini"><h3>Nonrepeatable read</h3><p>Read one row twice and see different committed values during the same transaction.</p></article>
+      <article class="card mini"><h3>Phantom</h3><p>Repeat a predicate query and see a changed set of matching rows.</p></article>
+      <article class="card mini"><h3>Lost update</h3><p>Two clients derive writes from the same stale value, and one logical change is overwritten.</p></article>
+      <article class="card mini"><h3>Write skew</h3><p>Transactions read the same invariant, update different rows, and jointly violate the invariant.</p></article>
+      <article class="card mini"><h3>Deadlock</h3><p>A waits for B while B waits for A. The database aborts at least one transaction to break the cycle.</p></article>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Pessimistic vs optimistic concurrency</h2>
+    <table>
+      <thead><tr><th>Approach</th><th>How it works</th><th>Best fit</th><th>Main cost</th></tr></thead>
+      <tbody>
+        <tr><td>Pessimistic</td><td>Lock the row/resource before making a conflict-sensitive decision.</td><td>High contention, short transactions, scarce resources such as the last ticket.</td><td>Waiting, deadlocks, reduced concurrency, long lock hold times.</td></tr>
+        <tr><td>Optimistic</td><td>Read a version, attempt a conditional write, and detect whether another writer won.</td><td>Low-to-moderate contention and APIs where retry is straightforward.</td><td>Wasted work and retries when conflicts are frequent.</td></tr>
+        <tr><td>Atomic SQL</td><td>Encode the check and state change in one statement.</td><td>Counters, stock decrements, state transitions with a clear predicate.</td><td>Not every multi-row business rule fits one statement.</td></tr>
+        <tr><td>Serializable</td><td>Let the database detect non-serializable transaction combinations.</td><td>Complex invariants where manual locking is error-prone.</td><td>Monitoring overhead and transaction retries.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card" id="lab-setup">
+    <h2>Hands-on setup</h2>
+    <p>This lesson uses the existing PostgreSQL Docker service. Open two terminal windows, labelled <strong>Session A</strong> and <strong>Session B</strong>.</p>
+    <pre><code>git pull
+
+cd labs
+docker compose up -d postgres
+cd ..
+
+docker exec -i ds_course_postgres \
+  psql -U app -d system_design \
+  &lt; labs/transactions-postgres/01_setup.sql</code></pre>
+    <p>Open a PostgreSQL shell in each terminal:</p>
+    <pre><code>docker exec -it ds_course_postgres \
+  psql -U app -d system_design</code></pre>
+    <p>In Session A:</p>
+    <pre><code>SET application_name = 'lesson3-session-a';
+\pset pager off</code></pre>
+    <p>In Session B:</p>
+    <pre><code>SET application_name = 'lesson3-session-b';
+\pset pager off</code></pre>
+    <div class="good"><strong>Reset between experiments:</strong> rerun <code>01_setup.sql</code> whenever the tables are no longer in the expected state.</div>
+  </section>
+
+  <section class="card" id="snapshots">
+    <h2>Experiment 1 — Statement snapshot vs transaction snapshot</h2>
+    <h3>Read Committed</h3>
+    <div class="session">
+      <article><strong>Session A</strong><pre><code>BEGIN ISOLATION LEVEL READ COMMITTED;
+SELECT balance FROM accounts WHERE account_id = 1;
+-- pause here</code></pre></article>
+      <article><strong>Session B</strong><pre><code>BEGIN;
+UPDATE accounts
+SET balance = 1200
+WHERE account_id = 1;
+COMMIT;</code></pre></article>
+    </div>
+    <p>Back in Session A:</p>
+    <pre><code>SELECT balance FROM accounts WHERE account_id = 1;
+COMMIT;</code></pre>
+
+    <h3>Repeatable Read</h3>
+    <p>Reset the lab, then repeat with Session A starting:</p>
+    <pre><code>BEGIN ISOLATION LEVEL REPEATABLE READ;
+SELECT balance FROM accounts WHERE account_id = 1;</code></pre>
+    <p>Session B updates and commits as before. Session A re-reads the row from its stable snapshot, then commits.</p>
+  </section>
+
+  <section class="card" id="locking-lab">
+    <h2>Experiment 2 — Plain read vs locking read</h2>
+    <h3>Ordinary SELECT</h3>
+    <div class="session">
+      <article><strong>Session A</strong><pre><code>BEGIN;
+SELECT * FROM accounts WHERE account_id = 1;
+-- keep transaction open</code></pre></article>
+      <article><strong>Session B</strong><pre><code>UPDATE accounts
+SET balance = balance + 10
+WHERE account_id = 1;</code></pre></article>
+    </div>
+    <p>Finish Session A with <code>COMMIT;</code>.</p>
+
+    <h3>SELECT FOR UPDATE</h3>
+    <p>Reset the lab. Session A reserves the row:</p>
+    <pre><code>BEGIN;
+SELECT *
+FROM accounts
+WHERE account_id = 1
+FOR UPDATE;</code></pre>
+    <p>Session B sets a short timeout and attempts the conflicting write:</p>
+    <pre><code>SET lock_timeout = '3s';
+UPDATE accounts
+SET balance = balance + 10
+WHERE account_id = 1;
+RESET lock_timeout;</code></pre>
+    <p>Commit Session A, then retry the Session B update.</p>
+
+    <h3>SELECT FOR SHARE</h3>
+    <p>Reset the lab. Session A uses <code>FOR SHARE</code>. Session B can acquire another compatible share lock, but its update waits or times out until Session A ends.</p>
+  </section>
+
+  <section class="card">
+    <h2>Inspect locks while a session is blocked</h2>
+    <p>While one session is waiting, run from a third terminal:</p>
+    <pre><code>docker exec -i ds_course_postgres \
+  psql -U app -d system_design \
+  &lt; labs/transactions-postgres/02_observe_locks.sql</code></pre>
+    <p>The report shows backend state, wait events, granted/ungranted locks, and blocking process IDs.</p>
+  </section>
+
+  <section class="card" id="optimistic">
+    <h2>Experiment 3 — Lost update and optimistic version checks</h2>
+    <h3>Stale read-modify-write</h3>
+    <p>Reset the lab. Both sessions read the same inventory row:</p>
+    <pre><code>SELECT stock, version
+FROM inventory
+WHERE product_id = 1;</code></pre>
+    <p>Session A writes the computed value and commits:</p>
+    <pre><code>UPDATE inventory SET stock = 9 WHERE product_id = 1;</code></pre>
+    <p>Session B later writes the same stale computed value:</p>
+    <pre><code>UPDATE inventory SET stock = 9 WHERE product_id = 1;</code></pre>
+    <p>Two logical decrements have produced only one stored decrement.</p>
+
+    <h3>Optimistic version check</h3>
+    <p>Reset. Both sessions read version 0. Each attempts:</p>
+    <pre><code>UPDATE inventory
+SET stock = stock - 1,
+    version = version + 1
+WHERE product_id = 1
+  AND version = 0
+  AND stock > 0
+RETURNING product_id, stock, version;</code></pre>
+    <p>Only one update should match version 0. The other client detects zero affected rows and must reread or retry.</p>
+
+    <h3>Atomic update</h3>
+    <pre><code>UPDATE inventory
+SET stock = stock - 1
+WHERE product_id = 1
+  AND stock > 0
+RETURNING stock;</code></pre>
+    <p>Encoding the check and modification in one SQL statement avoids an application-side read/write gap.</p>
+  </section>
+
+  <section class="card">
+    <h2>Experiment 4 — Phantom behavior</h2>
+    <p>At Read Committed, Session A counts active bookings for a room and date range. Session B inserts a matching row and commits. Session A repeats the count inside its original transaction.</p>
+    <p>Reset and repeat with Session A using Repeatable Read. PostgreSQL’s stable snapshot keeps the repeated predicate result unchanged inside that transaction.</p>
+    <p>The exact statements are in <code>labs/transactions-postgres/README.md</code>.</p>
+  </section>
+
+  <section class="card" id="write-skew">
+    <h2>Experiment 5 — Write skew under snapshot isolation</h2>
+    <p>The <code>doctors</code> table starts with Alice and Bob both on call. The business rule says at least one doctor must remain on call.</p>
+    <div class="session">
+      <article><strong>Session A</strong><pre><code>BEGIN ISOLATION LEVEL REPEATABLE READ;
+SELECT count(*) FROM doctors WHERE on_call;
+UPDATE doctors SET on_call = false
+WHERE doctor_name = 'alice';</code></pre></article>
+      <article><strong>Session B</strong><pre><code>BEGIN ISOLATION LEVEL REPEATABLE READ;
+SELECT count(*) FROM doctors WHERE on_call;
+UPDATE doctors SET on_call = false
+WHERE doctor_name = 'bob';</code></pre></article>
+    </div>
+    <p>Commit both. They updated different rows, so both may commit even though the joint result violates the invariant.</p>
+
+    <h3>Repeat at Serializable</h3>
+    <p>Reset and use <code>BEGIN ISOLATION LEVEL SERIALIZABLE;</code> in both sessions. PostgreSQL should reject one transaction with a serialization failure. The application must retry the entire failed transaction.</p>
+  </section>
+
+  <section class="card" id="deadlocks">
+    <h2>Experiment 6 — Deadlock and lock ordering</h2>
+    <div class="session">
+      <article><strong>Session A</strong><pre><code>BEGIN;
+UPDATE accounts SET balance = balance - 10
+WHERE account_id = 1;
+
+-- after Session B locks account 2:
+UPDATE accounts SET balance = balance + 10
+WHERE account_id = 2;</code></pre></article>
+      <article><strong>Session B</strong><pre><code>BEGIN;
+UPDATE accounts SET balance = balance - 20
+WHERE account_id = 2;
+
+-- after Session A waits for account 2:
+UPDATE accounts SET balance = balance + 20
+WHERE account_id = 1;</code></pre></article>
+    </div>
+    <p>PostgreSQL detects the wait cycle and aborts one transaction. Roll back any failed transaction before continuing.</p>
+    <div class="good"><strong>Prevention pattern:</strong> acquire locks in a consistent global order, such as lower account ID first. Still keep retry logic because deadlocks can arise through less obvious paths.</div>
+  </section>
+
+  <section class="card">
+    <h2>Optional experiment — Queue workers with SKIP LOCKED</h2>
+    <p>Both sessions run:</p>
+    <pre><code>BEGIN;
+SELECT job_id, payload
+FROM queue_jobs
+WHERE status = 'ready'
+ORDER BY job_id
+FOR UPDATE SKIP LOCKED
+LIMIT 1;</code></pre>
+    <p>Each worker should reserve a different ready job without waiting. The worker updates its selected job to <code>running</code> and commits.</p>
+    <div class="warn"><code>SKIP LOCKED</code> is useful for work queues, not for general-purpose consistent reads. It intentionally omits rows locked elsewhere.</div>
+  </section>
+
+  <section class="card">
+    <h2>Application patterns</h2>
+    <div class="grid">
+      <article class="card mini"><h3>Last ticket</h3><p>Use an atomic conditional update or a short <code>FOR UPDATE</code> transaction. Add idempotency around the purchase request.</p></article>
+      <article class="card mini"><h3>Profile edit</h3><p>A version column or ETag-style compare-and-swap often works well because conflicts are uncommon and retries are understandable.</p></article>
+      <article class="card mini"><h3>Account transfer</h3><p>Update both accounts in one transaction, lock them in a consistent order, preserve ledger/audit records, and retry deadlocks safely.</p></article>
+      <article class="card mini"><h3>Business invariant</h3><p>For rules spanning multiple rows, consider Serializable, explicit invariant locks, or redesigning the invariant around a single constrained row.</p></article>
+    </div>
+  </section>
+
+  <section class="card" id="cloud">
+    <h2>Cloud and distributed-system angle</h2>
+    <ul>
+      <li><strong>Managed PostgreSQL keeps PostgreSQL semantics:</strong> moving to RDS, Cloud SQL, or managed Postgres does not remove lock waits, deadlocks, or isolation choices.</li>
+      <li><strong>Network round trips lengthen transactions:</strong> extra application calls hold snapshots and locks longer.</li>
+      <li><strong>Read replicas are a different topic:</strong> replica lag can violate read-your-writes even if the primary transaction used strong isolation.</li>
+      <li><strong>Failover aborts in-flight work:</strong> clients need bounded retries and idempotency rather than assuming every timeout means failure.</li>
+      <li><strong>Serverless bursts can overwhelm connections:</strong> use pooling and keep transactions short.</li>
+      <li><strong>Cross-service workflows are not one local transaction:</strong> outbox, sagas, idempotency, and reconciliation handle wider workflows.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Common mistakes</h2>
+    <div class="grid">
+      <article class="card mini"><h3>Holding a lock during user input</h3><p>Never keep a transaction open while waiting for a human or remote service when a reservation/state-machine design will work.</p></article>
+      <article class="card mini"><h3>Retrying only the failed statement</h3><p>A serialization failure invalidates the transaction’s assumptions. Retry the complete transaction.</p></article>
+      <article class="card mini"><h3>Treating timeout as rollback proof</h3><p>A client timeout may occur after the server committed. Use idempotency keys and verify outcomes.</p></article>
+      <article class="card mini"><h3>Using stronger isolation blindly</h3><p>Serializable can simplify correctness, but workloads need retry handling, short transactions, and monitoring.</p></article>
+      <article class="card mini"><h3>Assuming ordinary SELECT locks rows</h3><p>In PostgreSQL, normal reads use snapshots; explicit locking reads must be requested.</p></article>
+      <article class="card mini"><h3>Ignoring constraints</h3><p>Unique constraints, checks, and foreign keys are concurrency tools. Application checks alone are race-prone.</p></article>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>What mastery looks like</h2>
+    <ul>
+      <li>You can trace what each session sees under Read Committed, Repeatable Read, and Serializable.</li>
+      <li>You know when a normal read uses MVCC versus when a locking read is required.</li>
+      <li>You can choose between atomic SQL, optimistic version checks, pessimistic locks, and Serializable.</li>
+      <li>You expect deadlocks and serialization failures and design safe retries.</li>
+      <li>You separate transaction isolation from replication lag and distributed workflows.</li>
+    </ul>
+    <p><a class="button green" href="../questions/lesson-03-transactions-isolation-locks-concurrency.md">Continue to the questions file</a></p>
+  </section>
+
+  <section class="card">
+    <h2>Primary references</h2>
+    <ul>
+      <li><a href="https://dataintensive.net/">Designing Data-Intensive Applications — official site</a></li>
+      <li><a href="https://www.postgresql.org/docs/current/mvcc-intro.html">PostgreSQL concurrency-control introduction</a></li>
+      <li><a href="https://www.postgresql.org/docs/current/transaction-iso.html">PostgreSQL transaction isolation</a></li>
+      <li><a href="https://www.postgresql.org/docs/current/explicit-locking.html">PostgreSQL explicit locking</a></li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
