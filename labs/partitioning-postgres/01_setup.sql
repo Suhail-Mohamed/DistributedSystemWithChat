@@ -29,17 +29,17 @@ INSERT INTO events_plain (
 )
 SELECT
     gs,
-    CASE
+    (CASE
         WHEN gs % 10 < 4 THEN 1
         ELSE 2 + (gs % 999)
-    END AS tenant_id,
+    END)::integer AS tenant_id,
     1 + (gs * 7919 % 100000) AS user_id,
-    (ARRAY['view', 'click', 'purchase', 'login'])[1 + (gs % 4)] AS event_type,
+    (ARRAY['view', 'click', 'purchase', 'login'])[(1 + (gs % 4))::integer] AS event_type,
     TIMESTAMPTZ '2026-01-01 00:00:00+00'
-        + ((gs - 1) % 181) * INTERVAL '1 day'
-        + ((gs * 37) % 86400) * INTERVAL '1 second' AS occurred_at,
+        + (((gs - 1) % 181)::double precision * INTERVAL '1 day')
+        + (((gs * 37) % 86400)::double precision * INTERVAL '1 second') AS occurred_at,
     jsonb_build_object('source', 'lesson-02', 'sequence', gs)
-FROM generate_series(1, 600000) AS gs;
+FROM generate_series(1::bigint, 600000::bigint) AS gs;
 
 ANALYZE events_plain;
 
