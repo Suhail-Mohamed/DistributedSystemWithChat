@@ -52,7 +52,7 @@ SELECT
     left(blocked.query, 80) AS blocked_query,
     left(blocker.query, 80) AS blocker_query
 FROM pg_stat_activity AS blocked
-CROSS JOIN LATERAL unnest(pg_blocking_pids(blocked.pid)) AS blocker_pid
+CROSS JOIN LATERAL unnest(pg_blocking_pids(blocked.pid)) AS blockers(blocker_pid)
 JOIN pg_stat_activity AS blocker
-  ON blocker.pid = blocker_pid
+  ON blocker.pid = blockers.blocker_pid
 ORDER BY blocked.pid, blocker.pid;
