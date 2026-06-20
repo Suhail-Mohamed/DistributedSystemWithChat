@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Database-Forward System Design Course</title>
   <style>
-    :root{--bg:#0f172a;--card:#f8fafc;--ink:#172033;--muted:#64748b;--accent:#2563eb;--line:#dbe4ef;--ok:#047857}*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f1f5f9;color:var(--ink);line-height:1.55}.hero{background:linear-gradient(135deg,var(--bg),#1e1b4b 55%,#172554);color:white;padding:56px 24px}.wrap{max-width:1080px;margin:0 auto}.hero h1{font-size:clamp(2rem,5vw,4rem);line-height:1.05;margin:0 0 16px}.hero p{max-width:780px;color:#dbeafe;font-size:1.1rem}.pill{display:inline-block;border:1px solid rgba(255,255,255,.25);padding:6px 12px;border-radius:999px;margin:4px 6px 4px 0;color:#e0e7ff;background:rgba(255,255,255,.08)}main{padding:28px 24px 64px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}.card{background:white;border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 8px 24px rgba(15,23,42,.06)}.card h2{margin-top:0}.button{display:inline-block;background:var(--accent);color:white;text-decoration:none;padding:10px 14px;border-radius:10px;font-weight:700}.button.secondary{background:#334155}.button.green{background:var(--ok)}code{background:#e2e8f0;padding:.15rem .35rem;border-radius:6px}.note{background:#ecfeff;border-left:5px solid #0891b2;padding:16px;border-radius:12px}footer{border-top:1px solid var(--line);padding:24px;color:var(--muted)}
+    :root{--bg:#0f172a;--card:#f8fafc;--ink:#172033;--muted:#64748b;--accent:#2563eb;--line:#dbe4ef;--ok:#047857;--purple:#7c3aed}*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f1f5f9;color:var(--ink);line-height:1.55}.hero{background:linear-gradient(135deg,var(--bg),#1e1b4b 55%,#172554);color:white;padding:56px 24px}.wrap{max-width:1080px;margin:0 auto}.hero h1{font-size:clamp(2rem,5vw,4rem);line-height:1.05;margin:0 0 16px}.hero p{max-width:780px;color:#dbeafe;font-size:1.1rem}.pill{display:inline-block;border:1px solid rgba(255,255,255,.25);padding:6px 12px;border-radius:999px;margin:4px 6px 4px 0;color:#e0e7ff;background:rgba(255,255,255,.08)}main{padding:28px 24px 64px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}.card{background:white;border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 8px 24px rgba(15,23,42,.06)}.card h2{margin-top:0}.button{display:inline-block;background:var(--accent);color:white;text-decoration:none;padding:10px 14px;border-radius:10px;font-weight:700}.button.secondary{background:#334155}.button.green{background:var(--ok)}.button.purple{background:var(--purple)}code{background:#e2e8f0;padding:.15rem .35rem;border-radius:6px}.note{background:#ecfeff;border-left:5px solid #0891b2;padding:16px;border-radius:12px}footer{border-top:1px solid var(--line);padding:24px;color:var(--muted)}
   </style>
 </head>
 <body>
@@ -22,6 +22,7 @@
       <article class="card"><h2>Roadmap</h2><p>See the course sequence and review rubric.</p><p><a class="button secondary" href="course/00-course-format-and-roadmap.html">Open roadmap</a></p></article>
       <article class="card"><h2>Lesson 1</h2><p>Cloud storage fundamentals and cloud database architecture.</p><p><a class="button" href="lessons/01-cloud-storage-and-cloud-database-architecture.html">Open Lesson 1</a></p></article>
       <article class="card"><h2>Lesson 2</h2><p>Partitioning across PostgreSQL, cloud storage, Snowflake-style systems, DynamoDB, and sharded databases.</p><p><a class="button green" href="lessons/02-partitioning-cloud-vs-noncloud.html">Open Lesson 2</a></p></article>
+      <article class="card"><h2>Lesson 3</h2><p>Transaction isolation, MVCC, read/write locks, optimistic and pessimistic concurrency, phantoms, write skew, and deadlocks.</p><p><a class="button purple" href="lessons/03-transactions-isolation-locks-concurrency.html">Open Lesson 3</a></p></article>
     </section>
 
     <section class="card" style="margin-top:20px">
@@ -40,8 +41,8 @@
       <h2>Current topic sequence</h2>
       <p><strong>1.</strong> Cloud storage fundamentals and cloud database architecture</p>
       <p><strong>2.</strong> Partitioning: cloud vs non-cloud</p>
-      <p><strong>3.</strong> Query plans, optimizers, and joins</p>
-      <p><strong>4.</strong> Locking, isolation, optimistic/pessimistic concurrency, and phantoms</p>
+      <p><strong>3.</strong> Transactions, isolation, locks, and concurrent access</p>
+      <p><strong>4.</strong> Query plans, optimizers, and joins</p>
     </section>
   </main>
   <footer><div class="wrap">Use the repo as the course notebook and chat for review and correction.</div></footer>
