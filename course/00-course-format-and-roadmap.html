@@ -28,8 +28,8 @@
       <tbody>
         <tr><td>1</td><td><a href="../lessons/01-cloud-storage-and-cloud-database-architecture.html">Cloud storage fundamentals and cloud database architecture</a></td><td>Separates object storage, OLTP databases, warehouses, compute, storage, and metadata.</td><td>DuckDB + Parquet</td></tr>
         <tr><td>2</td><td><a href="../lessons/02-partitioning-cloud-vs-noncloud.html">Partitioning: cloud vs non-cloud</a></td><td>Builds the foundation for sharding, hot partitions, routing, rebalancing, and pruning.</td><td>Postgres partitions + hot-key simulation</td></tr>
-        <tr><td>3</td><td>Query plans, optimizers, and joins</td><td>Turns SQL from magic into physical operators and cost estimates.</td><td>Postgres EXPLAIN ANALYZE</td></tr>
-        <tr><td>4</td><td>Locking, isolation, optimistic/pessimistic concurrency, and phantoms</td><td>Connects database behavior to product correctness.</td><td>Two-terminal transaction labs</td></tr>
+        <tr><td>3</td><td><a href="../lessons/03-transactions-isolation-locks-concurrency.html">Transactions, isolation, locks, and concurrent access</a></td><td>Explains MVCC, read/write locks, anomalies, optimistic and pessimistic concurrency, deadlocks, and retries.</td><td>Two-session PostgreSQL labs</td></tr>
+        <tr><td>4</td><td>Query plans, optimizers, and joins</td><td>Turns SQL from magic into physical operators and cost estimates.</td><td>Postgres EXPLAIN ANALYZE</td></tr>
       </tbody>
     </table>
   </section>
@@ -37,7 +37,7 @@
   <section class="card">
     <h2>Design influence</h2>
     <p>This course uses the comparative, tradeoff-first style of <em>Designing Data-Intensive Applications</em>: understand the fundamental mechanism, then compare how real systems make different choices.</p>
-    <p class="note">For partitioning topics, always include data placement, routing, skew, rebalancing, and secondary-index consequences—not only the partition key.</p>
+    <p class="note">For concurrency topics, separate snapshots, locks, validation, invariants, and retry behavior. A transaction isolation label alone does not explain every product’s implementation.</p>
   </section>
 
   <section class="card">
@@ -54,7 +54,7 @@
         <tr><td>Data model</td><td>Does the schema/key model support the product behavior?</td></tr>
         <tr><td>Indexes and plans</td><td>Do indexes and physical plans match the query shapes?</td></tr>
         <tr><td>Partitioning/sharding</td><td>Does the placement strategy address routing, skew, and rebalancing?</td></tr>
-        <tr><td>Correctness</td><td>Are concurrency, retries, idempotency, and consistency handled?</td></tr>
+        <tr><td>Correctness</td><td>Are snapshots, locks, retries, idempotency, and consistency handled?</td></tr>
         <tr><td>Cloud realism</td><td>Does the design mention managed services, regions/AZs, cost, and observability?</td></tr>
         <tr><td>Failure modes</td><td>Does the design admit what breaks and how recovery works?</td></tr>
       </tbody>
